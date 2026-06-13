@@ -54,31 +54,55 @@ Run SkillSpector without installing Python by building it locally from the inclu
 **Build the image:**
 
 ```bash
-docker build -t skillspector .
+make docker-build
+# or: docker build -t skillspector .
 ```
 
-**Scan a local directory** (mount it into `/scan`, which is the container's working directory):
+**Scan a local directory** by mounting your current directory into `/scan`, the container's working directory:
 
 ```bash
-docker run --rm -v "$(pwd)/my-skill:/scan/my-skill" skillspector scan ./my-skill/
+docker run --rm -v "$PWD:/scan" skillspector scan ./my-skill/ --no-llm
 ```
 
-**Scan with LLM analysis** (pass credentials as environment variables):
+**Scan with LLM analysis** by passing credentials with a local `.env` file:
+
+```bash
+cat > .env <<'EOF'
+SKILLSPECTOR_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+EOF
+```
 
 ```bash
 docker run --rm \
-  -v "$(pwd)/my-skill:/scan/my-skill" \
-  -e SKILLSPECTOR_PROVIDER=anthropic \
-  -e ANTHROPIC_API_KEY=sk-ant-... \
+  -v "$PWD:/scan" \
+  --env-file .env \
   skillspector scan ./my-skill/
 ```
 
-**Write a report to the host filesystem:**
+Or pass credentials directly from your shell environment:
 
 ```bash
 docker run --rm \
-  -v "$(pwd):/scan" \
-  skillspector scan ./my-skill/ --format json --output report.json
+  -v "$PWD:/scan" \
+  -e SKILLSPECTOR_PROVIDER=anthropic \
+  -e ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+  skillspector scan ./my-skill/
+```
+
+**Write a report to the host filesystem** by writing to the mounted directory:
+
+```bash
+docker run --rm \
+  -v "$PWD:/scan" \
+  skillspector scan ./my-skill/ --no-llm --format json --output report.json
+```
+
+**Optional alias** for repeated static scans:
+
+```bash
+alias skillspector-docker='docker run --rm -v "$PWD:/scan" skillspector'
+skillspector-docker scan ./my-skill/ --no-llm
 ```
 
 ### Basic Usage
